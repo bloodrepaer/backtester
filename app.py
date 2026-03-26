@@ -41,8 +41,8 @@ st.markdown("""
 <style>
     .stTextArea textarea { font-family: 'Courier New', monospace; font-size: 13px; }
     .metric-box { background: #1a1a1a; border-radius: 8px; padding: 12px 16px; margin: 4px 0; }
-    .metric-label { color: #888; font-size: 12px; margin-bottom: 2px; }
-    .metric-value { color: #fff; font-size: 20px; font-weight: 600; }
+    .metric-label { color: #888; font-size: 12px; margin-bottom: 2px; white-space: nowrap; }
+    .metric-value { color: #fff; font-size: 18px; font-weight: 600; white-space: nowrap; }
     .metric-delta-pos { color: #4dff91; font-size: 12px; }
     .metric-delta-neg { color: #ff4d4d; font-size: 12px; }
     div[data-testid="stSidebar"] { background: #111; }
@@ -339,16 +339,22 @@ def show_metrics(net_ret, market_ret, strategy_name):
 
     cols = st.columns(4)
     def metric(col, label, val, ref=None, fmt="%"):
-        delta_str = ""
+        val_str = f"{val*100:.2f}%" if fmt == "%" else f"{val:.2f}"
+        delta_html = ""
         if ref is not None:
             diff = val - ref
             sign = "+" if diff >= 0 else ""
-            col.metric(label,
-                       f"{val*100:.2f}%" if fmt=="%" else f"{val:.2f}",
-                       f"{sign}{diff*100:.2f}%" if fmt=="%" else f"{sign}{diff:.2f}")
-        else:
-            col.metric(label,
-                       f"{val*100:.2f}%" if fmt=="%" else f"{val:.2f}")
+            diff_str = f"{sign}{diff*100:.2f}%" if fmt == "%" else f"{sign}{diff:.2f}"
+            cls = "metric-delta-pos" if diff >= 0 else "metric-delta-neg"
+            arrow = "↑" if diff >= 0 else "↓"
+            delta_html = f'<div class="{cls}">{arrow} {diff_str}</div>'
+        col.markdown(f"""
+        <div class="metric-box">
+            <div class="metric-label">{label}</div>
+            <div class="metric-value">{val_str}</div>
+            {delta_html}
+        </div>
+        """, unsafe_allow_html=True)
 
     metric(cols[0], "CAGR",        m_cagr,   bm_cagr)
     metric(cols[1], "Sharpe",      m_sharpe, bm_sharpe, fmt="x")
@@ -359,7 +365,12 @@ def show_metrics(net_ret, market_ret, strategy_name):
     metric(cols2[0], "Sortino",    m_sortino, None, fmt="x")
     metric(cols2[1], "Calmar",     m_calmar,  None, fmt="x")
     metric(cols2[2], "Win rate",   m_win,     None)
-    cols2[3].metric("Days tested", len(net_ret))
+    cols2[3].markdown(f"""
+    <div class="metric-box">
+        <div class="metric-label">Days tested</div>
+        <div class="metric-value">{len(net_ret)}</div>
+    </div>
+    """, unsafe_allow_html=True)
 
 
 # ── WALK-FORWARD RESULTS TABLE ────────────────────────────────────────────────
